@@ -57,31 +57,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 		Face: descFace,
 	}
 
-	cursorY := params.margin
-	headerWidth := innerWidth
-	headerX := params.margin
-	titleLines := wrapTwoLines(params.titleText, headerWidth, titleDrawer)
-	if len(titleLines) > 0 {
-		drawTextLines(titleDrawer, titleLines, headerX, cursorY, headerWidth, alignLeft)
-		cursorY += textBlockHeight(titleDrawer.Face, len(titleLines))
-	}
-
-	secondaryText := strings.TrimSpace(params.secondaryText)
-	if secondaryText != "" {
-		headerGap := maxInt(4, params.padding/2)
-		if cursorY > params.margin {
-			cursorY += headerGap
-		}
-		secondaryText = truncateWithEllipsis(secondaryText, headerWidth, descDrawer)
-		drawTextLines(descDrawer, []string{secondaryText}, headerX, cursorY, headerWidth, alignLeft)
-		cursorY += textBlockHeight(descDrawer.Face, 1)
-	}
-
-	if len(titleLines) > 0 || secondaryText != "" {
-		cursorY += params.padding
-	}
-
-	contentTop := cursorY
+	// Calculate column layout first to determine header width
 	colGap := maxInt(params.padding, 4)
 	if innerWidth-colGap < 2 {
 		colGap = 0
@@ -105,6 +81,36 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if singleColumn {
 		rightColX = leftColX
 	}
+
+	// Header text should use left column width to leave space for icon
+	headerWidth := leftColWidth
+	headerX := params.margin
+	cursorY := params.margin
+	titleLines := wrapTwoLines(params.titleText, headerWidth, titleDrawer)
+	if len(titleLines) > 0 {
+		drawTextLines(titleDrawer, titleLines, headerX, cursorY, headerWidth, alignLeft)
+		cursorY += textBlockHeight(titleDrawer.Face, len(titleLines))
+	}
+
+	secondaryText := strings.TrimSpace(params.secondaryText)
+	if secondaryText != "" {
+		headerGap := maxInt(4, params.padding/2)
+		if cursorY > params.margin {
+			cursorY += headerGap
+		}
+		// Only truncate if text doesn't fit
+		if descDrawer.MeasureString(secondaryText).Ceil() > headerWidth {
+			secondaryText = truncateWithEllipsis(secondaryText, headerWidth, descDrawer)
+		}
+		drawTextLines(descDrawer, []string{secondaryText}, headerX, cursorY, headerWidth, alignLeft)
+		cursorY += textBlockHeight(descDrawer.Face, 1)
+	}
+
+	if len(titleLines) > 0 || secondaryText != "" {
+		cursorY += params.padding
+	}
+
+	contentTop := cursorY
 
 	qr, err := qrcode.New(params.url, qrcode.Medium)
 	if err != nil {
@@ -134,7 +140,10 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if idText != "" {
 		idLabelDrawer := &font.Drawer{Dst: img, Src: image.Black, Face: idLabelFace}
 		idValueDrawer := &font.Drawer{Dst: img, Src: image.Black, Face: idValueFace}
-		idText = truncateWithEllipsis(idText, rightColWidth, idValueDrawer)
+		// Only truncate if text doesn't fit
+		if idValueDrawer.MeasureString(idText).Ceil() > rightColWidth {
+			idText = truncateWithEllipsis(idText, rightColWidth, idValueDrawer)
+		}
 		idGap := maxInt(2, params.padding/2)
 		idLabelHeight := textBlockHeight(idLabelDrawer.Face, 1)
 		idValueHeight := textBlockHeight(idValueDrawer.Face, 1)
