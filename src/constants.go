@@ -6,9 +6,9 @@ const (
 	defaultDPI           = 203.0
 	defaultMargin        = 8
 	defaultPadding       = 6
-	defaultQRSize        = 140
-	defaultTitleFontSize = 26.0
-	defaultDescFontSize  = 14.0
+	defaultQRSize        = 170
+	defaultTitleFontSize = 28.0
+	defaultDescFontSize  = 16.0
 	defaultMaxUpload     = 10 * 1024 * 1024
 )
 

@@ -27,28 +27,6 @@ func renderLabel(params labelParams) (image.Image, error) {
 		return nil, errors.New("invalid label size")
 	}
 
-	colGap := params.padding
-	if colGap < 0 {
-		colGap = 0
-	}
-	if innerWidth-colGap < 2 {
-		colGap = 0
-	}
-	leftColWidth := (innerWidth - colGap) / 2
-	rightColWidth := innerWidth - colGap - leftColWidth
-	singleColumn := false
-	if leftColWidth < 1 || rightColWidth < 1 {
-		leftColWidth = innerWidth
-		rightColWidth = innerWidth
-		colGap = 0
-		singleColumn = true
-	}
-	leftColX := params.margin
-	rightColX := params.margin + leftColWidth + colGap
-	if singleColumn {
-		rightColX = leftColX
-	}
-
 	titleFace, err := newFontFace(gobold.TTF, params.titleFontSize, params.dpi)
 	if err != nil {
 		return nil, err
@@ -57,8 +35,8 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	idLabelSize := maxFloat(params.descriptionFontSize*0.75, 10.0)
-	idValueSize := maxFloat(params.descriptionFontSize*1.15, params.descriptionFontSize+2.0)
+	idLabelSize := maxFloat(params.descriptionFontSize*0.85, 11.0)
+	idValueSize := maxFloat(params.descriptionFontSize*1.4, params.descriptionFontSize+4.0)
 	idLabelFace, err := newFontFace(goregular.TTF, idLabelSize, params.dpi)
 	if err != nil {
 		return nil, err
@@ -80,19 +58,22 @@ func renderLabel(params labelParams) (image.Image, error) {
 	}
 
 	cursorY := params.margin
-	titleLines := wrapTwoLines(params.titleText, leftColWidth, titleDrawer)
+	headerWidth := innerWidth
+	headerX := params.margin
+	titleLines := wrapTwoLines(params.titleText, headerWidth, titleDrawer)
 	if len(titleLines) > 0 {
-		drawTextLines(titleDrawer, titleLines, leftColX, cursorY, leftColWidth, alignLeft)
+		drawTextLines(titleDrawer, titleLines, headerX, cursorY, headerWidth, alignLeft)
 		cursorY += textBlockHeight(titleDrawer.Face, len(titleLines))
 	}
 
 	secondaryText := strings.TrimSpace(params.secondaryText)
 	if secondaryText != "" {
+		headerGap := maxInt(4, params.padding/2)
 		if cursorY > params.margin {
-			cursorY += params.padding
+			cursorY += headerGap
 		}
-		secondaryText = truncateWithEllipsis(secondaryText, leftColWidth, descDrawer)
-		drawTextLines(descDrawer, []string{secondaryText}, leftColX, cursorY, leftColWidth, alignLeft)
+		secondaryText = truncateWithEllipsis(secondaryText, headerWidth, descDrawer)
+		drawTextLines(descDrawer, []string{secondaryText}, headerX, cursorY, headerWidth, alignLeft)
 		cursorY += textBlockHeight(descDrawer.Face, 1)
 	}
 
@@ -100,12 +81,37 @@ func renderLabel(params labelParams) (image.Image, error) {
 		cursorY += params.padding
 	}
 
+	contentTop := cursorY
+	colGap := maxInt(params.padding, 4)
+	if innerWidth-colGap < 2 {
+		colGap = 0
+	}
+	minRightWidth := maxInt(80, int(float64(innerWidth)*0.32))
+	leftTarget := maxInt(params.qrSize, int(float64(innerWidth)*0.6))
+	leftColWidth := leftTarget
+	if innerWidth-colGap-leftColWidth < minRightWidth {
+		leftColWidth = innerWidth - colGap - minRightWidth
+	}
+	rightColWidth := innerWidth - colGap - leftColWidth
+	singleColumn := false
+	if leftColWidth < 1 || rightColWidth < 1 {
+		leftColWidth = innerWidth
+		rightColWidth = innerWidth
+		colGap = 0
+		singleColumn = true
+	}
+	leftColX := params.margin
+	rightColX := params.margin + leftColWidth + colGap
+	if singleColumn {
+		rightColX = leftColX
+	}
+
 	qr, err := qrcode.New(params.url, qrcode.Medium)
 	if err != nil {
 		return nil, err
 	}
 
-	availableHeight := params.height - params.margin - cursorY
+	availableHeight := params.height - params.margin - contentTop
 	if availableHeight < 1 {
 		availableHeight = 1
 	}
@@ -118,7 +124,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if qrSize > 0 {
 		qrImg := qr.Image(qrSize)
 		qrX := leftColX
-		qrY := cursorY
+		qrY := contentTop
 		qrRect := image.Rect(qrX, qrY, qrX+qrSize, qrY+qrSize)
 		draw.Draw(img, qrRect, qrImg, image.Point{}, draw.Src)
 	}
@@ -138,7 +144,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 		drawTextLines(idValueDrawer, []string{idText}, rightColX, idTop+idLabelHeight+idGap, rightColWidth, alignRight)
 	}
 
-	iconAreaTop := params.margin
+	iconAreaTop := contentTop
 	iconAreaBottom := params.height - params.margin
 	if idBlockHeight > 0 {
 		iconAreaBottom = params.height - params.margin - idBlockHeight - params.padding

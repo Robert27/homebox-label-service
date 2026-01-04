@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"image/png"
 	"net/http"
 	"strconv"
 )
@@ -26,20 +24,19 @@ func labelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
+	maxUpload := envInt("HBOX_WEB_MAX_UPLOAD_SIZE", defaultMaxUpload)
+	pngData, err := encodePNGWithDPI(img, params.dpi)
+	if err != nil {
 		http.Error(w, "failed to encode image", http.StatusInternalServerError)
 		return
 	}
-
-	maxUpload := envInt("HBOX_WEB_MAX_UPLOAD_SIZE", defaultMaxUpload)
-	if buf.Len() > maxUpload {
+	if len(pngData) > maxUpload {
 		http.Error(w, "image exceeds maximum upload size", http.StatusRequestEntityTooLarge)
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
+	w.Header().Set("Content-Length", strconv.Itoa(len(pngData)))
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(buf.Bytes())
+	_, _ = w.Write(pngData)
 }
