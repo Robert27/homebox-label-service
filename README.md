@@ -10,7 +10,7 @@ HTTP service that renders a single label image for Homebox Label Maker. It expos
 ## Run
 
 ```sh
-go run .
+go run ./src
 ```
 
 The service listens on `:8080` by default.

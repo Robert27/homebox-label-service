@@ -17,12 +17,15 @@
           pname = name;
           version = "0.1.0";
           src = ./.;
-          subPackages = [ "." ];
+          subPackages = [ "./src" ];
+          postInstall = ''
+            mv $out/bin/src $out/bin/${name}
+          '';
           vendorHash = "sha256-XWKIxTuHjHwiQ2QsLPt3FUI3ovGxImMQbzCXiB7522k=";
         };
 
-        # The actual binary name (Go uses directory/module name)
-        binaryName = "HomeBox-External-Label-Service";
+        # The desired binary name for packaging.
+        binaryName = "homebox-label-service";
 
         # Create a package that has the binary in /bin
         appPackage = pkgs.runCommand "${name}-app" {} ''
