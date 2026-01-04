@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - ".github/workflows/build-image.yml"
-      - "main.go"
+      - "src/*.go"
       - "go.mod"
       - "go.sum"
       - "flake.nix"
