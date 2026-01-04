@@ -91,14 +91,19 @@ func renderLabel(params labelParams) (image.Image, error) {
 		rightColX = leftColX
 	}
 
-	// Header text should use left column width to leave space for icon
-	headerWidth := leftColWidth
+	// Title uses full width and stays on one line to avoid shrinking QR space.
+	headerWidth := innerWidth
 	headerX := params.margin
 	cursorY := params.margin
-	titleLines := wrapTwoLines(params.titleText, headerWidth, titleDrawer)
-	if len(titleLines) > 0 {
-		drawTextLines(titleDrawer, titleLines, headerX, cursorY, headerWidth, alignLeft)
-		cursorY += textBlockHeight(titleDrawer.Face, len(titleLines))
+	titleBottom := cursorY
+	titleText := strings.TrimSpace(params.titleText)
+	if titleText != "" {
+		if titleDrawer.MeasureString(titleText).Ceil() > headerWidth {
+			titleText = truncateWithEllipsis(titleText, headerWidth, titleDrawer)
+		}
+		drawTextLines(titleDrawer, []string{titleText}, headerX, cursorY, headerWidth, alignLeft)
+		cursorY += textBlockHeight(titleDrawer.Face, 1)
+		titleBottom = cursorY
 	}
 
 	// Show AdditionalInformation/DescriptionText between title and QR code
@@ -116,7 +121,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 		cursorY += textBlockHeight(descDrawer.Face, 1)
 	}
 
-	if len(titleLines) > 0 || secondaryText != "" {
+	if titleText != "" || secondaryText != "" {
 		cursorY += params.padding
 	}
 
@@ -170,6 +175,9 @@ func renderLabel(params labelParams) (image.Image, error) {
 	}
 
 	iconAreaTop := contentTop
+	if !singleColumn {
+		iconAreaTop = titleBottom
+	}
 	iconAreaBottom := params.height - params.margin
 	if idBlockHeight > 0 {
 		iconAreaBottom = params.height - params.margin - idBlockHeight - params.padding
@@ -177,7 +185,6 @@ func renderLabel(params labelParams) (image.Image, error) {
 	iconAreaHeight := iconAreaBottom - iconAreaTop
 	if iconAreaHeight > 0 && rightColWidth > 0 {
 		iconSize := minInt(rightColWidth, iconAreaHeight)
-		iconSize = int(float64(iconSize) * 0.65)
 		if iconSize >= 12 {
 			iconX := rightColX + (rightColWidth-iconSize)/2
 			iconY := iconAreaTop + (iconAreaHeight-iconSize)/2

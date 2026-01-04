@@ -7,6 +7,63 @@ import (
 )
 
 func parseLabelParams(values url.Values) (labelParams, error) {
+	rawTitle := queryGet(values, "TitleText")
+	rawDescription := queryGet(values, "DescriptionText")
+	rawAdditional := firstNonEmpty(
+		queryGet(values, "AdditionalInformation"),
+		queryGet(values, "AdditiontalInformation"),
+	)
+	rawID := firstNonEmpty(queryGet(values, "ID"), queryGet(values, "Id"))
+	rawURL := queryGet(values, "URL")
+	extractedID := extractItemIDFromURL(rawURL)
+
+	descLines := splitNonEmptyLines(rawDescription)
+	descPrimary := ""
+	descSecondary := ""
+	if len(descLines) > 0 {
+		descPrimary = descLines[0]
+	}
+	if len(descLines) > 1 {
+		descSecondary = descLines[1]
+	}
+
+	rawTitleTrim := strings.TrimSpace(rawTitle)
+	titleText := rawTitleTrim
+	titleIsID := false
+	if rawTitleTrim != "" {
+		if extractedID != "" && strings.EqualFold(rawTitleTrim, extractedID) {
+			titleIsID = true
+		} else if rawID == "" && rawAdditional != "" && looksLikeID(rawTitleTrim) {
+			titleIsID = true
+		}
+	}
+
+	if titleText == "" && descPrimary != "" {
+		titleText = descPrimary
+		descPrimary = ""
+	} else if titleIsID && descPrimary != "" {
+		titleText = descPrimary
+		descPrimary = ""
+	}
+
+	secondaryText := strings.TrimSpace(rawAdditional)
+	if secondaryText == "" {
+		if descPrimary != "" {
+			secondaryText = descPrimary
+		} else if descSecondary != "" {
+			secondaryText = descSecondary
+		}
+	}
+
+	idText := strings.TrimSpace(rawID)
+	if idText == "" && extractedID != "" {
+		logDebug("extracted ID '%s' from URL", extractedID)
+		idText = extractedID
+	}
+	if idText == "" && titleIsID {
+		idText = rawTitleTrim
+	}
+
 	params := labelParams{
 		width:               parseInt(values, "Width", defaultWidth),
 		height:              parseInt(values, "Height", defaultHeight),
@@ -14,14 +71,10 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 		margin:              parseInt(values, "Margin", defaultMargin),
 		padding:             parseInt(values, "ComponentPadding", defaultPadding),
 		qrSize:              parseInt(values, "QrSize", defaultQRSize),
-		url:                 queryGet(values, "URL"),
-		titleText:           queryGet(values, "TitleText"),
-		secondaryText: firstNonEmpty(
-			queryGet(values, "DescriptionText"),
-			queryGet(values, "AdditionalInformation"),
-			queryGet(values, "AdditiontalInformation"),
-		),
-		idText:              firstNonEmpty(queryGet(values, "ID"), queryGet(values, "Id")),
+		url:                 rawURL,
+		titleText:           titleText,
+		secondaryText:       secondaryText,
+		idText:              idText,
 		titleFontSize:       parseFloat(values, "TitleFontSize", defaultTitleFontSize),
 		descriptionFontSize: parseFloat(values, "DescriptionFontSize", defaultDescFontSize),
 	}
@@ -72,15 +125,6 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 	if params.titleText == "" && params.secondaryText != "" {
 		params.titleText = params.secondaryText
 		params.secondaryText = ""
-	}
-	// Always extract item ID from URL for bottom right (no "ID" label)
-	// Use explicit ID/Id parameters if provided, otherwise extract from URL
-	if params.idText == "" {
-		extractedID := extractItemIDFromURL(params.url)
-		if extractedID != "" {
-			logDebug("extracted ID '%s' from URL", extractedID)
-			params.idText = extractedID
-		}
 	}
 	if params.url == "" {
 		params.url = " "
@@ -134,6 +178,23 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+func splitNonEmptyLines(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	lines := strings.FieldsFunc(value, func(r rune) bool {
+		return r == '\n' || r == '\r'
+	})
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
+}
+
 func shortURLFrom(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -165,12 +226,37 @@ func extractItemIDFromURL(raw string) string {
 	if path == "" {
 		return ""
 	}
-	// Look for /item/ pattern and extract the ID after it
+	// Look for /item/ or /a/ pattern and extract the ID after it
 	parts := strings.Split(path, "/")
 	for i, part := range parts {
-		if part == "item" && i+1 < len(parts) {
+		if (part == "item" || part == "a") && i+1 < len(parts) {
 			return strings.TrimSpace(parts[i+1])
 		}
 	}
+	if len(parts) > 0 {
+		last := strings.TrimSpace(parts[len(parts)-1])
+		if looksLikeID(last) {
+			return last
+		}
+	}
 	return ""
+}
+
+func looksLikeID(value string) bool {
+	if value == "" {
+		return false
+	}
+	hasDigit := false
+	for _, r := range value {
+		switch {
+		case r >= '0' && r <= '9':
+			hasDigit = true
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r == '-' || r == '_':
+		default:
+			return false
+		}
+	}
+	return hasDigit
 }

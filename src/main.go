@@ -13,7 +13,7 @@ func main() {
 	timeout := envDuration("HBOX_LABEL_MAKER_LABEL_SERVICE_TIMEOUT", 30*time.Second)
 	maxUpload := envInt("HBOX_WEB_MAX_UPLOAD_SIZE", defaultMaxUpload)
 
-	logInfo("homebox label service starting")
+	logInfo("HomeBox Label Service starting")
 	logDebug("  port: %s", port)
 	logDebug("  timeout: %v", timeout)
 	logDebug("  max upload size: %d bytes", maxUpload)
@@ -30,7 +30,7 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	logInfo("homebox label service listening on :%s", port)
+	logInfo("HomeBox Label Service listening on :%s", port)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("server error: %v", err)
 	}

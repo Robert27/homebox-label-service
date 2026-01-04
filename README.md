@@ -1,4 +1,4 @@
-# Homebox Label Service
+# HomeBox Label Service
 
 HTTP service that renders a single label image for Homebox Label Maker. It exposes a GET endpoint that accepts query parameters and returns a PNG label image.
 
