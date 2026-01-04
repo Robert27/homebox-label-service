@@ -14,7 +14,10 @@ import (
 )
 
 func renderLabel(params labelParams) (image.Image, error) {
+	logDebug("starting label rendering: %dx%d", params.width, params.height)
+
 	if params.width <= 0 || params.height <= 0 {
+		logError("invalid label size: %dx%d", params.width, params.height)
 		return nil, errors.New("invalid label size")
 	}
 
@@ -24,8 +27,11 @@ func renderLabel(params labelParams) (image.Image, error) {
 	innerWidth := params.width - 2*params.margin
 	innerHeight := params.height - 2*params.margin
 	if innerWidth < 1 || innerHeight < 1 {
+		logError("invalid inner size after margins: %dx%d (margin=%d)", innerWidth, innerHeight, params.margin)
 		return nil, errors.New("invalid label size")
 	}
+
+	logDebug("inner dimensions: %dx%d (margins: %d)", innerWidth, innerHeight, params.margin)
 
 	titleFace, err := newFontFace(gobold.TTF, params.titleFontSize, params.dpi)
 	if err != nil {
@@ -75,6 +81,9 @@ func renderLabel(params labelParams) (image.Image, error) {
 		rightColWidth = innerWidth
 		colGap = 0
 		singleColumn = true
+		logDebug("using single column layout (left=%d, right=%d)", leftColWidth, rightColWidth)
+	} else {
+		logDebug("using two column layout (left=%d, right=%d, gap=%d)", leftColWidth, rightColWidth, colGap)
 	}
 	leftColX := params.margin
 	rightColX := params.margin + leftColWidth + colGap
@@ -115,6 +124,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 
 	qr, err := qrcode.New(params.url, qrcode.Medium)
 	if err != nil {
+		logError("QR code creation failed: %v", err)
 		return nil, err
 	}
 	qr.DisableBorder = true
@@ -130,11 +140,14 @@ func renderLabel(params labelParams) (image.Image, error) {
 	qrSize = minInt(qrSize, leftColWidth)
 	qrSize = minInt(qrSize, availableHeight)
 	if qrSize > 0 {
+		logDebug("rendering QR code: %dx%d at (%d,%d)", qrSize, qrSize, leftColX, params.height-params.margin-qrSize)
 		qrImg := qr.Image(qrSize)
 		qrX := leftColX
 		qrY := params.height - params.margin - qrSize
 		qrRect := image.Rect(qrX, qrY, qrX+qrSize, qrY+qrSize)
 		draw.Draw(img, qrRect, qrImg, image.Point{}, draw.Src)
+	} else {
+		logDebug("skipping QR code (size would be 0)")
 	}
 
 	// Show ID label with extracted ID in bottom right
@@ -168,9 +181,15 @@ func renderLabel(params labelParams) (image.Image, error) {
 		if iconSize >= 12 {
 			iconX := rightColX + (rightColWidth-iconSize)/2
 			iconY := iconAreaTop + (iconAreaHeight-iconSize)/2
+			logDebug("rendering icon: %dx%d at (%d,%d)", iconSize, iconSize, iconX, iconY)
 			drawOpenBoxIcon(img, iconX, iconY, iconSize, iconSize)
+		} else {
+			logDebug("skipping icon (size %d < minimum 12)", iconSize)
 		}
+	} else {
+		logDebug("skipping icon (no available space: height=%d, width=%d)", iconAreaHeight, rightColWidth)
 	}
 
+	logDebug("label rendering completed successfully")
 	return img, nil
 }

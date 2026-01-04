@@ -21,6 +21,7 @@ The service listens on `:8080` by default.
 - `HBOX_LABEL_MAKER_LABEL_SERVICE_TIMEOUT`: request timeout in seconds or Go duration (default `30s`)
 - `HBOX_WEB_MAX_UPLOAD_SIZE`: max response size in bytes (default `10485760`)
 - `HBOX_LABEL_MAKER_LABEL_SERVICE_URL`: set this in Homebox to the service URL
+- `LOG_LEVEL`: logging verbosity - `INFO` (default) or `DEBUG` for detailed logs
 
 ## Endpoint
 
@@ -65,5 +66,5 @@ Landscape label with:
 ## Example
 
 ```sh
-curl -o label.png "http://localhost:8080/?Width=320&Height=240&Dpi=203&Margin=8&ComponentPadding=6&QrSize=140&URL=https%3A%2F%2Finv.eggl.one%2Fitem%2F000-029&TitleText=Zahnstange&AdditiontalInformation=inv.eggl.one"
+curl -o label.png "http://localhost:8080/?Width=320&Height=240&Dpi=203&Margin=8&ComponentPadding=6&QrSize=140&URL=https%3A%2F%2Finv.eggl.one%2Fitem%2F000-029&TitleText=Zahnstange&AdditionalInformation=inv.eggl.one"
 ```

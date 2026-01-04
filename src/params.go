@@ -16,7 +16,11 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 		qrSize:              parseInt(values, "QrSize", defaultQRSize),
 		url:                 queryGet(values, "URL"),
 		titleText:           queryGet(values, "TitleText"),
-		secondaryText:       firstNonEmpty(queryGet(values, "DescriptionText"), queryGet(values, "AdditionalInformation")),
+		secondaryText: firstNonEmpty(
+			queryGet(values, "DescriptionText"),
+			queryGet(values, "AdditionalInformation"),
+			queryGet(values, "AdditiontalInformation"),
+		),
 		idText:              firstNonEmpty(queryGet(values, "ID"), queryGet(values, "Id")),
 		titleFontSize:       parseFloat(values, "TitleFontSize", defaultTitleFontSize),
 		descriptionFontSize: parseFloat(values, "DescriptionFontSize", defaultDescFontSize),
@@ -60,6 +64,8 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 		maxQR = 1
 	}
 	if params.qrSize > maxQR {
+		logDebug("QR size %d clamped to maximum %d (label size: %dx%d, margin: %d)",
+			params.qrSize, maxQR, params.width, params.height, params.margin)
 		params.qrSize = maxQR
 	}
 
@@ -72,6 +78,7 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 	if params.idText == "" {
 		extractedID := extractItemIDFromURL(params.url)
 		if extractedID != "" {
+			logDebug("extracted ID '%s' from URL", extractedID)
 			params.idText = extractedID
 		}
 	}
