@@ -161,10 +161,6 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if idText != "" {
 		idLabelDrawer := &font.Drawer{Dst: img, Src: image.Black, Face: idLabelFace}
 		idValueDrawer := &font.Drawer{Dst: img, Src: image.Black, Face: idValueFace}
-		// Only truncate if text doesn't fit
-		if idValueDrawer.MeasureString(idText).Ceil() > rightColWidth {
-			idText = truncateWithEllipsis(idText, rightColWidth, idValueDrawer)
-		}
 		idGap := maxInt(2, params.padding/2)
 		idLabelHeight := textBlockHeight(idLabelFace, 1)
 		idValueHeight := textBlockHeight(idValueFace, 1)
