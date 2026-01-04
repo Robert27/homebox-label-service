@@ -65,5 +65,5 @@ Landscape label with:
 ## Example
 
 ```sh
-curl -o label.png "http://localhost:8080/?Width=320&Height=240&Dpi=203&Margin=8&ComponentPadding=6&QrSize=140&URL=https%3A%2F%2Finv.eggl.one%2Fitem%2F000-029&TitleText=Zahnstange&DescriptionText=inv.eggl.one&AdditionalInformation=000-029"
+curl -o label.png "http://localhost:8080/?Width=320&Height=240&Dpi=203&Margin=8&ComponentPadding=6&QrSize=140&URL=https%3A%2F%2Finv.eggl.one%2Fitem%2F000-029&TitleText=Zahnstange&AdditiontalInformation=inv.eggl.one"
 ```

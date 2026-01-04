@@ -16,8 +16,8 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 		qrSize:              parseInt(values, "QrSize", defaultQRSize),
 		url:                 queryGet(values, "URL"),
 		titleText:           queryGet(values, "TitleText"),
-		secondaryText:       queryGet(values, "DescriptionText"),
-		idText:              firstNonEmpty(queryGet(values, "AdditionalInformation"), queryGet(values, "ID"), queryGet(values, "Id")),
+		secondaryText:       firstNonEmpty(queryGet(values, "DescriptionText"), queryGet(values, "AdditionalInformation")),
+		idText:              firstNonEmpty(queryGet(values, "ID"), queryGet(values, "Id")),
 		titleFontSize:       parseFloat(values, "TitleFontSize", defaultTitleFontSize),
 		descriptionFontSize: parseFloat(values, "DescriptionFontSize", defaultDescFontSize),
 	}
@@ -67,8 +67,13 @@ func parseLabelParams(values url.Values) (labelParams, error) {
 		params.titleText = params.secondaryText
 		params.secondaryText = ""
 	}
-	if params.secondaryText == "" {
-		params.secondaryText = shortURLFrom(params.url)
+	// Always extract item ID from URL for bottom right (no "ID" label)
+	// Use explicit ID/Id parameters if provided, otherwise extract from URL
+	if params.idText == "" {
+		extractedID := extractItemIDFromURL(params.url)
+		if extractedID != "" {
+			params.idText = extractedID
+		}
 	}
 	if params.url == "" {
 		params.url = " "
@@ -138,4 +143,27 @@ func shortURLFrom(raw string) string {
 	}
 	host = strings.TrimPrefix(host, "www.")
 	return host
+}
+
+func extractItemIDFromURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	path := parsed.Path
+	if path == "" {
+		return ""
+	}
+	// Look for /item/ pattern and extract the ID after it
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		if part == "item" && i+1 < len(parts) {
+			return strings.TrimSpace(parts[i+1])
+		}
+	}
+	return ""
 }

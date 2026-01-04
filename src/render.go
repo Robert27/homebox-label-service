@@ -92,6 +92,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 		cursorY += textBlockHeight(titleDrawer.Face, len(titleLines))
 	}
 
+	// Show AdditionalInformation/DescriptionText between title and QR code
 	secondaryText := strings.TrimSpace(params.secondaryText)
 	if secondaryText != "" {
 		headerGap := maxInt(4, params.padding/2)
@@ -99,10 +100,10 @@ func renderLabel(params labelParams) (image.Image, error) {
 			cursorY += headerGap
 		}
 		// Only truncate if text doesn't fit
-		if descDrawer.MeasureString(secondaryText).Ceil() > headerWidth {
-			secondaryText = truncateWithEllipsis(secondaryText, headerWidth, descDrawer)
+		if descDrawer.MeasureString(secondaryText).Ceil() > leftColWidth {
+			secondaryText = truncateWithEllipsis(secondaryText, leftColWidth, descDrawer)
 		}
-		drawTextLines(descDrawer, []string{secondaryText}, headerX, cursorY, headerWidth, alignLeft)
+		drawTextLines(descDrawer, []string{secondaryText}, leftColX, cursorY, leftColWidth, alignLeft)
 		cursorY += textBlockHeight(descDrawer.Face, 1)
 	}
 
@@ -111,13 +112,14 @@ func renderLabel(params labelParams) (image.Image, error) {
 	}
 
 	contentTop := cursorY
+	qrY := contentTop
 
 	qr, err := qrcode.New(params.url, qrcode.Medium)
 	if err != nil {
 		return nil, err
 	}
 
-	availableHeight := params.height - params.margin - contentTop
+	availableHeight := params.height - params.margin - qrY
 	if availableHeight < 1 {
 		availableHeight = 1
 	}
@@ -130,11 +132,11 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if qrSize > 0 {
 		qrImg := qr.Image(qrSize)
 		qrX := leftColX
-		qrY := contentTop
 		qrRect := image.Rect(qrX, qrY, qrX+qrSize, qrY+qrSize)
 		draw.Draw(img, qrRect, qrImg, image.Point{}, draw.Src)
 	}
 
+	// Show ID label with extracted ID in bottom right
 	idText := strings.TrimSpace(params.idText)
 	idBlockHeight := 0
 	if idText != "" {
@@ -145,8 +147,8 @@ func renderLabel(params labelParams) (image.Image, error) {
 			idText = truncateWithEllipsis(idText, rightColWidth, idValueDrawer)
 		}
 		idGap := maxInt(2, params.padding/2)
-		idLabelHeight := textBlockHeight(idLabelDrawer.Face, 1)
-		idValueHeight := textBlockHeight(idValueDrawer.Face, 1)
+		idLabelHeight := textBlockHeight(idLabelFace, 1)
+		idValueHeight := textBlockHeight(idValueFace, 1)
 		idBlockHeight = idLabelHeight + idGap + idValueHeight
 		idTop := params.height - params.margin - idBlockHeight
 		drawTextLines(idLabelDrawer, []string{"ID"}, rightColX, idTop, rightColWidth, alignRight)
