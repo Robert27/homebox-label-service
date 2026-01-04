@@ -112,14 +112,14 @@ func renderLabel(params labelParams) (image.Image, error) {
 	}
 
 	contentTop := cursorY
-	qrY := contentTop
 
 	qr, err := qrcode.New(params.url, qrcode.Medium)
 	if err != nil {
 		return nil, err
 	}
+	qr.DisableBorder = true
 
-	availableHeight := params.height - params.margin - qrY
+	availableHeight := params.height - params.margin - contentTop
 	if availableHeight < 1 {
 		availableHeight = 1
 	}
@@ -132,6 +132,7 @@ func renderLabel(params labelParams) (image.Image, error) {
 	if qrSize > 0 {
 		qrImg := qr.Image(qrSize)
 		qrX := leftColX
+		qrY := params.height - params.margin - qrSize
 		qrRect := image.Rect(qrX, qrY, qrX+qrSize, qrY+qrSize)
 		draw.Draw(img, qrRect, qrImg, image.Point{}, draw.Src)
 	}
