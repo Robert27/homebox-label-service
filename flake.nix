@@ -21,7 +21,7 @@
           postInstall = ''
             mv $out/bin/src $out/bin/${name}
           '';
-          vendorHash = "sha256-XWKIxTuHjHwiQ2QsLPt3FUI3ovGxImMQbzCXiB7522k=";
+          vendorHash = "sha256-cE83upsAW4AJh26l0zMHI4lkz4syFJxvP21y/vagRI4=";
         };
 
         # The desired binary name for packaging.
