@@ -19,6 +19,8 @@ func main() {
 	logDebug("  max upload size: %d bytes", maxUpload)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/", labelHandler)
 
 	server := &http.Server{
