@@ -38,4 +38,3 @@ func logDebug(format string, v ...interface{}) {
 func logError(format string, v ...interface{}) {
 	log.Printf("[ERROR] "+format, v...)
 }
-
